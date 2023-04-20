@@ -46,7 +46,8 @@ class BrutForce:
         for Point in Points:
             count = 0
             for Rectangle in self.Rectangles:
-                if Rectangle.LeftDown.x <= Point.x <= Rectangle.RightUp.x and Rectangle.LeftDown.y <= Point.y <= Rectangle.RightUp.y:
+                if Rectangle.LeftDown.x <= Point.x <= Rectangle.RightUp.x and \
+                        Rectangle.LeftDown.y <= Point.y <= Rectangle.RightUp.y:
                     count += 1
             a.append(count)
         return a
@@ -61,6 +62,11 @@ class BrutForce:
         self.GetAnswers(Points)
         return time.time() - start
 
+    def TimeBuildAndAnswers(self, Rectangles, Points):
+        start = time.time()
+        self.BuildData(Rectangles)
+        self.GetAnswers(Points)
+        return time.time() - start
 
 class MapAlgo:
     def __init__(self):
@@ -123,9 +129,21 @@ class MapAlgo:
         self.GetAnswers(Points)
         return time.time() - start
 
+    def TimeBuildAndAnswers(self, Rectangles, Points):
+        start = time.time()
+        self.BuildData(Rectangles)
+        self.GetAnswers(Points)
+        return time.time() - start
+
 
 class TreeAlgo:
     def __init__(self):
+        self.Tree = None
+        self.Trees = None
+        self.LenComprY = None
+        self.LenComprCoorTree = None
+        self.LenComprX = None
+        self.CompressedTreesX = None
         self.Roots = None
         self.CompressedRootsX = None
         self.CompressedY = None
@@ -164,15 +182,14 @@ class TreeAlgo:
                                       self.FindPos(self.CompressedY, Rectangles[i].RightUp.y + 1), False)
         Events = sorted(Events, key=lambda EventCase: EventCase.ComprIndexX)
 
-
         CompXCoor = Events[0].ComprIndexX
 
         self.CompressedTreesX = [0] * self.LenComprX
         LogLenComprY = math.log2(self.LenComprY)
-        LenTree = self.LenComprY*2-1 if LogLenComprY%1==0 else 2**(int(LogLenComprY) + 2) - 1
-        self.LenComprCoorTree = 2**LogLenComprY if LogLenComprY%1==0 else 2**(int(LogLenComprY) + 1)
+        LenTree = self.LenComprY * 2 - 1 if LogLenComprY % 1 == 0 else 2 ** (int(LogLenComprY) + 2) - 1
+        self.LenComprCoorTree = 2 ** LogLenComprY if LogLenComprY % 1 == 0 else 2 ** (int(LogLenComprY) + 1)
         self.Trees = [[0] * LenTree] * self.LenComprX
-        self.Tree = [0] * (LenTree)
+        self.Tree = [0] * LenTree
 
         i = 0
         for event in Events:
@@ -182,7 +199,7 @@ class TreeAlgo:
                 i += 1
                 CompXCoor = event.ComprIndexX
             self.ChangeTree(0, 0, self.LenComprCoorTree, event.ComprStartY, event.ComprEndY,
-                                   1 if event.isStart else -1)
+                            1 if event.isStart else -1)
 
         self.Trees[i] = self.Tree.copy()
         self.CompressedTreesX[i] = CompXCoor
@@ -193,23 +210,24 @@ class TreeAlgo:
             return
         Mid = (Left + Right) // 2
         if Mid > StartY and Left < EndY:
-            self.ChangeTree(Index*2+1, Left, Mid, StartY, EndY, isStartValue)
+            self.ChangeTree(Index * 2 + 1, Left, Mid, StartY, EndY, isStartValue)
         if Right > StartY and Mid < EndY:
-            self.ChangeTree(Index*2+2, Mid, Right, StartY, EndY, isStartValue)
+            self.ChangeTree(Index * 2 + 2, Mid, Right, StartY, EndY, isStartValue)
 
     def GetSum(self, Tree, Index, Left, Right, Target):
         if Right - Left == 1:
             return Tree[Index]
         Mid = (Left + Right) // 2
         if Target < Mid:
-            return Tree[Index] + self.GetSum(Tree, Index*2+1, Left, Mid, Target)
+            return Tree[Index] + self.GetSum(Tree, Index * 2 + 1, Left, Mid, Target)
         else:
-            return Tree[Index] + self.GetSum(Tree, Index*2+2, Mid, Right, Target)
+            return Tree[Index] + self.GetSum(Tree, Index * 2 + 2, Mid, Right, Target)
 
     def GetAnswer(self, Point):
         if Point.x < self.CompressedX[0] or Point.y < self.CompressedY[0]:
             return 0
-        return self.GetSum(self.Trees[self.FindPosMore(self.CompressedTreesX, self.FindPosMore(self.CompressedX, Point.x) - 1) - 1], 0,
+        return self.GetSum(
+            self.Trees[self.FindPosMore(self.CompressedTreesX, self.FindPosMore(self.CompressedX, Point.x) - 1) - 1], 0,
             0, self.LenComprCoorTree, self.FindPosMore(self.CompressedY, Point.y) - 1)
 
     def GetAnswers(self, Points):
@@ -242,6 +260,12 @@ class TreeAlgo:
         self.GetAnswers(Points)
         return time.time() - start
 
+    def TimeBuildAndAnswers(self, Rectangles, Points):
+        start = time.time()
+        self.BuildData(Rectangles)
+        self.GetAnswers(Points)
+        return time.time() - start
+
 
 class Tests:
     def __init__(self):
@@ -251,7 +275,7 @@ class Tests:
     def GenerateRectangles(self, N):
         Rectangles = [0] * N
         for i in range(N):
-            Rectangles[i] = RectangleClass(10*i, 10*i, 10*(2*N-i),  10*(2*N-i))
+            Rectangles[i] = RectangleClass(10 * i, 10 * i, 10 * (2 * N - i), 10 * (2 * N - i))
         return Rectangles
 
     def GeneratePoints(self, N):
@@ -267,12 +291,12 @@ class Tests:
             Points[i] = Point2D(random.randint(MinX, MaxX), random.randint(MinY, MaxY))
         return Points
 
-    def CheckTime(self, N, M):
+    def CheckTime(self, N, Interval, M):
         BrutAlgo = BrutForce()
         AlgoMap = MapAlgo()
         AlgoTree = TreeAlgo()
 
-        NumberTests = [i for i in range(0, N+1, N//100)]
+        NumberTests = [i for i in range(0, N + 1, Interval)]
         TestsLen = len(NumberTests)
 
         TestRectangles = [self.GenerateRectangles(i) for i in tqdm(NumberTests)]
@@ -319,14 +343,48 @@ class Tests:
         dx.grid()
         plt.show()
 
+    def CheckCommonTime(self, N):
+        BrutAlgo = BrutForce()
+        AlgoMap = MapAlgo()
+        AlgoTree = TreeAlgo()
+
+        NumberTests = [i for i in range(0, N + 1, 1000)]
+        TestsLen = len(NumberTests)
+
+        TestRectangles = [self.GenerateRectangles(i) for i in tqdm(NumberTests)]
+        TestPoints = [self.GeneratePoints(i) for i in tqdm(NumberTests)]
+
+        BrutCommonTimes = np.array([]).astype('float64')
+        MapCommonTimes = np.array([]).astype('float64')
+        TreeCommonTimes = np.array([]).astype('float64')
+
+        for i in tqdm(range(TestsLen)):
+            BrutCommonTimes = np.append(BrutCommonTimes, BrutAlgo.TimeBuildAndAnswers(TestRectangles[i], TestPoints[i]))
+
+            MapCommonTimes = np.append(MapCommonTimes, AlgoMap.TimeBuildAndAnswers(TestRectangles[i], TestPoints[i]))
+
+            TreeCommonTimes = np.append(TreeCommonTimes, AlgoTree.TimeBuildAndAnswers(TestRectangles[i], TestPoints[i]))
+
+
+        fig = plt.figure()
+        dx = fig.add_subplot()
+        dx.plot(NumberTests, BrutCommonTimes)
+        dx.plot(NumberTests, MapCommonTimes)
+        dx.plot(NumberTests, TreeCommonTimes)
+        plt.title("Time complexity of building and answers")
+        dx.legend(['BrutForce', "MapBuilding", "SegmentTree"])
+        dx.set_xlabel('Number of rectangles and points')
+        dx.set_ylabel('Time building')
+        dx.grid()
+        plt.show()
+
     def CheckTimeBuild(self, N):
         BrutAlgo = BrutForce()
         AlgoMap = MapAlgo()
         AlgoTree = TreeAlgo()
 
-        NumberTests = range(0, N + 1, N//10)
+        NumberTests = range(0, N + 1, N // 10)
         TestsLen = len(NumberTests)
-
 
         TestRectangles = [self.GenerateRectangles(i) for i in tqdm(NumberTests)]
 
@@ -366,4 +424,4 @@ def GetInputPoints():
 
 
 TestCase = Tests()
-TestCase.CheckTime(1000, 100)
+TestCase.CheckCommonTime(5000)
